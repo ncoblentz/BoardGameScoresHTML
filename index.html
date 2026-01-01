@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Board Game Score Tracker</title>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --bg-color: #f4f7f6;
+            --text-color: #333;
+            --card-bg: #fff;
+            --border-radius: 8px;
+            --shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 15px;
+        }
+
+        h1, h2, h3 {
+            text-align: center;
+            color: #2c3e50;
+        }
+
+        .screen {
+            display: none;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        .game-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .game-item {
+            cursor: pointer;
+            text-align: center;
+            transition: transform 0.2s;
+        }
+
+        .game-item:active {
+            transform: scale(0.95);
+        }
+
+        .game-item img {
+            width: 100%;
+            border-radius: var(--border-radius);
+            aspect-ratio: 1/1;
+            object-fit: cover;
+            background: #eee;
+        }
+
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: none;
+            border-radius: var(--border-radius);
+            background-color: var(--primary-color);
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .btn-secondary {
+            background-color: #95a5a6;
+        }
+
+        .btn-danger {
+            background-color: #e74c3c;
+        }
+
+        .player-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .player-row input[type="text"] {
+            flex-grow: 1;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .player-row input[type="color"] {
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            border: none;
+            background: none;
+        }
+
+        .saved-players {
+            margin-top: 20px;
+            border-top: 1px solid #eee;
+            padding-top: 10px;
+        }
+
+        .saved-player-chip {
+            display: inline-flex;
+            align-items: center;
+            padding: 5px 10px;
+            margin: 5px;
+            background: #eee;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            gap: 5px;
+        }
+
+        .delete-player-btn {
+            background: rgba(0,0,0,0.1);
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: #666;
+            cursor: pointer;
+        }
+
+        .delete-player-btn:hover {
+            background: rgba(0,0,0,0.2);
+            color: #c0392b;
+        }
+
+        /* Score Sheet Styles */
+        .scoresheet-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 10px;
+            border: 1px solid #eee;
+            text-align: center;
+            min-width: 100px;
+        }
+
+        .category-name {
+            text-align: left;
+            font-weight: bold;
+            position: sticky;
+            left: 0;
+            background: #fff;
+            z-index: 10;
+            min-width: 120px;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.05);
+        }
+
+        .score-cell {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .score-val {
+            font-size: 1.5em;
+            font-weight: bold;
+            padding: 10px 5px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            min-width: 45px;
+            text-align: center;
+            cursor: pointer;
+        }
+
+        .score-input {
+            width: 45px;
+            font-size: 1.2em;
+            font-weight: bold;
+            text-align: center;
+            padding: 5px;
+            border: 1px solid var(--primary-color);
+            border-radius: 4px;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .mode-toggle {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 10px;
+            gap: 10px;
+        }
+
+        .toggle-btn {
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 2px solid #ddd;
+            background: #fff;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .toggle-btn.active {
+            border-color: var(--primary-color);
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .ctrl-btn {
+            padding: 4px 8px;
+            font-size: 13px;
+            border: 1px solid #ddd;
+            background: #f9f9f9;
+            border-radius: 4px;
+            cursor: pointer;
+            user-select: none;
+            font-weight: bold;
+            line-height: 1;
+        }
+
+        .ctrl-btn.plus {
+            color: #27ae60;
+            background: #eafaf1;
+        }
+
+        .ctrl-btn.minus {
+            color: #c0392b;
+            background: #fdecea;
+        }
+
+        .ctrl-btn:active {
+            background: #ddd;
+        }
+
+        .total-row {
+            background: #f0f0f0;
+            font-weight: bold;
+        }
+
+        .player-header {
+            writing-mode: horizontal-tb;
+            max-width: 100px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .sticky-header {
+            position: sticky;
+            top: 0;
+            background: #fff;
+            z-index: 11;
+        }
+
+        .sticky-header.category-name {
+            z-index: 12;
+        }
+
+        .sticky-total {
+            position: sticky;
+            bottom: 0;
+            background: #f0f0f0;
+            z-index: 10;
+        }
+
+        .header-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .game-icon-small {
+            height: 40px;
+            border-radius: 4px;
+        }
+
+        @media (max-width: 400px) {
+            .ctrl-btn {
+                font-size: 11px;
+                padding: 3px 6px;
+            }
+            .score-val {
+                font-size: 1.3em;
+                min-width: 35px;
+            }
+            .score-cell {
+                gap: 4px;
+            }
+            .toggle-btn {
+                padding: 6px 12px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- Screen 1: Game Selection -->
+    <div id="screen-game-selection" class="screen active">
+        <h1>Board Game Scorer</h1>
+        <div class="game-grid" id="game-list">
+            <!-- Games will be injected here -->
+        </div>
+    </div>
+
+    <!-- Screen 2: Player Setup -->
+    <div id="screen-player-setup" class="screen">
+        <div class="header-actions">
+            <button class="btn btn-secondary" onclick="showScreen('game-selection')" style="width: auto; margin: 0;">Back</button>
+            <h2 id="setup-game-name">Game Name</h2>
+        </div>
+        <div class="card">
+            <h3>Who's Playing?</h3>
+            <div id="player-inputs">
+                <!-- Player rows will be injected here -->
+            </div>
+            <button class="btn btn-secondary" onclick="addPlayerInput()">+ Add Player</button>
+            
+            <div class="saved-players">
+                <h4>Recent Players</h4>
+                <div id="recent-players-list">
+                    <!-- Saved players injected here -->
+                </div>
+            </div>
+
+            <button class="btn" onclick="startGame()">Start Game</button>
+        </div>
+    </div>
+
+    <!-- Screen 3: Score Sheet -->
+    <div id="screen-score-sheet" class="screen">
+        <div class="header-actions">
+            <button class="btn btn-danger" onclick="confirmNewGame()" style="width: auto; margin: 0;">New Game</button>
+            <div id="current-game-info" style="display: flex; align-items: center; gap: 10px;">
+                <img id="current-game-icon" src="" class="game-icon-small">
+                <span id="current-game-name" style="font-weight: bold;"></span>
+            </div>
+        </div>
+
+        <div id="scoresheet-container" style="overflow-x: auto; background: white; border-radius: var(--border-radius); box-shadow: var(--shadow);">
+            <!-- Table will be injected here -->
+        </div>
+
+        <div class="mode-toggle" style="margin-top: 15px;">
+            <button id="toggle-plus" class="toggle-btn active" onclick="setScoreMode(false)">+ Add Points</button>
+            <button id="toggle-minus" class="toggle-btn" onclick="setScoreMode(true)">- Subtract Points</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const GAMES = [
+        {
+            id: 'wingspan',
+            name: 'Wingspan',
+            categories: ['Birds', 'Bonus Cards', 'End-of-Round Goals', 'Eggs', 'Food on Cards', 'Tucked Cards'],
+            boxArt: 'https://cf.geekdo-images.com/yLZJCVLlIx4c7eJEWUNJ7w__imagepagezoom/img/yS4vL6iTCvHSvGySxyOjV_-R3dI=/fit-in/1200x900/filters:no_upscale():strip_icc()/pic4458123.jpg'
+        },
+        {
+            id: '7wonders',
+            name: '7 Wonders',
+            categories: ['Military', 'Treasury', 'Wonder', 'Civilian (Blue)', 'Scientific (Green)', 'Commercial (Yellow)', 'Guilds (Purple)'],
+            boxArt: 'https://cf.geekdo-images.com/35h9Za_JvMMMtx_92kT0Jg__imagepagezoom/img/LtOMljFoN5XIolflpiDKFuxD7lE=/fit-in/1200x900/filters:no_upscale():strip_icc()/pic7149798.jpg'
+        },
+        {
+            id: 'everdell',
+            name: 'Everdell',
+            categories: ['Base Points', 'Events', 'Journey', 'Bonus Cards', 'Points on Board'],
+            boxArt: 'https://cf.geekdo-images.com/fjE7V5LNq31yVEW_yuqI-Q__imagepagezoom/img/9a95lIPMa2o5WvQRIZvBHJ_81Kw=/fit-in/1200x900/filters:no_upscale():strip_icc()/pic3918905.png'
+        },
+        {
+            id: 'hearts',
+            name: 'Hearts',
+            categories: ['Total'],
+            boxArt: 'https://m.media-amazon.com/images/I/81xG-Y9XNLL._AC_SL1500_.jpg'
+        },
+        {
+            id: 'spades',
+            name: 'Spades',
+            categories: ['Bid', 'Points'],
+            boxArt: 'https://m.media-amazon.com/images/I/71Xm3z899mL._AC_SL1500_.jpg'
+        },
+        {
+            id: 'carcassonne',
+            name: 'Carcassonne',
+            categories: ['Roads', 'Cities', 'Monasteries', 'Farms', 'Expansion Points'],
+            boxArt: 'https://m.media-amazon.com/images/I/91TCH0H9yvL._AC_SL1500_.jpg'
+        },
+        {
+            id: 'agricola',
+            name: 'Agricola',
+            categories: ['Fields', 'Pastures', 'Grain', 'Vegetables', 'Sheep', 'Wild Boar', 'Cattle', 'Unused Spaces', 'Fenced Stables', 'Rooms/Material', 'Family Members', 'Points for Cards', 'Bonus Points'],
+            boxArt: 'https://cf.geekdo-images.com/dDDo2Hexl80ucK1IlqTk-g__imagepagezoom/img/kx5GWOutwYMf-z4wJrt2f-360d0=/fit-in/1200x900/filters:no_upscale():strip_icc()/pic831744.jpg'
+        }
+    ];
+
+    let state = {
+        currentGame: null, // { gameId, players: [{name, color, scores: []}] }
+        savedPlayers: [], // [{name, color}]
+        isNegativeMode: false
+    };
+
+    // --- Initialization ---
+    function init() {
+        loadFromLocalStorage();
+        renderGameList();
+        renderSavedPlayers();
+        
+        if (state.currentGame) {
+            showScreen('score-sheet');
+            renderScoreSheet();
+        } else {
+            showScreen('game-selection');
+        }
+    }
+
+    function loadFromLocalStorage() {
+        const savedGame = localStorage.getItem('boardGameScore_currentGame');
+        if (savedGame) state.currentGame = JSON.parse(savedGame);
+
+        const savedPlayers = localStorage.getItem('boardGameScore_savedPlayers');
+        if (savedPlayers) state.savedPlayers = JSON.parse(savedPlayers);
+    }
+
+    function saveToLocalStorage() {
+        localStorage.setItem('boardGameScore_currentGame', JSON.stringify(state.currentGame));
+        localStorage.setItem('boardGameScore_savedPlayers', JSON.stringify(state.savedPlayers));
+    }
+
+    // --- Navigation ---
+    function showScreen(screenId) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById('screen-' + screenId).classList.add('active');
+        
+        // Ensure toggle visibility/state is correct when showing score sheet
+        if (screenId === 'score-sheet') {
+            document.getElementById('toggle-plus').classList.toggle('active', !state.isNegativeMode);
+            document.getElementById('toggle-minus').classList.toggle('active', state.isNegativeMode);
+        }
+        
+        window.scrollTo(0, 0);
+    }
+
+    // --- Screen 1: Game Selection ---
+    function renderGameList() {
+        const list = document.getElementById('game-list');
+        list.innerHTML = GAMES.map(game => `
+            <div class="game-item card" onclick="selectGame('${game.id}')">
+                <img src="${game.boxArt}" alt="${game.name}" onerror="this.src='https://via.placeholder.com/150?text=${game.name}'">
+                <div style="margin-top: 10px; font-weight: bold;">${game.name}</div>
+            </div>
+        `).join('');
+    }
+
+    function selectGame(gameId) {
+        const game = GAMES.find(g => g.id === gameId);
+        document.getElementById('setup-game-name').innerText = game.name;
+        
+        // Reset player inputs for new setup
+        const container = document.getElementById('player-inputs');
+        container.innerHTML = '';
+        addPlayerInput();
+        addPlayerInput();
+        
+        state.tempGameId = gameId;
+        showScreen('player-setup');
+    }
+
+    // --- Screen 2: Player Setup ---
+    function addPlayerInput(name = '', color = getRandomColor()) {
+        const container = document.getElementById('player-inputs');
+        const count = container.querySelectorAll('.player-row').length;
+        if (count >= 8) return alert('Maximum 8 players allowed');
+        
+        const div = document.createElement('div');
+        div.className = 'player-row';
+        div.innerHTML = `
+            <input type="color" value="${color}">
+            <input type="text" placeholder="Player Name" value="${name}">
+            <button class="btn btn-danger" onclick="this.parentElement.remove()" style="width: auto; margin: 0; padding: 5px 10px;">&times;</button>
+        `;
+        container.appendChild(div);
+    }
+
+    function getRandomColor() {
+        const colors = ['#e74c3c', '#3498db', '#2ecc71', '#f1c40f', '#9b59b6', '#e67e22'];
+        return colors[Math.floor(Math.random() * colors.length)];
+    }
+
+    function renderSavedPlayers() {
+        const list = document.getElementById('recent-players-list');
+        list.innerHTML = state.savedPlayers.map((p, idx) => `
+            <span class="saved-player-chip" onclick="addPlayerInput('${p.name}', '${p.color}')" style="border-left: 5px solid ${p.color}">
+                ${p.name}
+                <span class="delete-player-btn" onclick="event.stopPropagation(); deleteSavedPlayer(${idx})">&times;</span>
+            </span>
+        `).join('');
+    }
+
+    function deleteSavedPlayer(idx) {
+        if (confirm(`Are you sure you want to delete ${state.savedPlayers[idx].name}?`)) {
+            state.savedPlayers.splice(idx, 1);
+            saveToLocalStorage();
+            renderSavedPlayers();
+        }
+    }
+
+    function startGame() {
+        const game = GAMES.find(g => g.id === state.tempGameId);
+        const playerRows = document.querySelectorAll('.player-row');
+        const players = [];
+
+        playerRows.forEach(row => {
+            const color = row.querySelector('input[type="color"]').value;
+            const name = row.querySelector('input[type="text"]').value.trim() || 'Player ' + (players.length + 1);
+            
+            players.push({
+                name: name,
+                color: color,
+                scores: new Array(game.categories.length).fill(0)
+            });
+
+            // Save player for future if not already saved
+            if (!state.savedPlayers.find(p => p.name.toLowerCase() === name.toLowerCase())) {
+                state.savedPlayers.unshift({ name, color });
+                if (state.savedPlayers.length > 10) state.savedPlayers.pop();
+            }
+        });
+
+        if (players.length === 0) return alert('Please add at least one player');
+
+        state.currentGame = {
+            gameId: game.id,
+            players: players
+        };
+
+        saveToLocalStorage();
+        renderSavedPlayers();
+        renderScoreSheet();
+        showScreen('score-sheet');
+    }
+
+    // --- Screen 3: Score Sheet ---
+    function renderScoreSheet() {
+        const game = GAMES.find(g => g.id === state.currentGame.gameId);
+        const players = state.currentGame.players;
+        
+        document.getElementById('current-game-name').innerText = game.name;
+        document.getElementById('current-game-icon').src = game.boxArt;
+
+        let html = `<table class="scoresheet-table"><thead><tr><th class="category-name sticky-header">Category</th>`;
+        
+        players.forEach((p, i) => {
+            html += `<th class="sticky-header" style="border-top: 4px solid ${p.color}">
+                        <input type="text" value="${p.name}" class="player-header" 
+                               style="border:none; text-align:center; width:100%; font-weight:bold; background:transparent;"
+                               onchange="updatePlayerName(${i}, this.value)">
+                    </th>`;
+        });
+        html += `</tr></thead><tbody>`;
+
+        game.categories.forEach((cat, catIdx) => {
+            html += `<tr><td class="category-name">${cat}</td>`;
+            players.forEach((p, pIdx) => {
+                const modeClass = state.isNegativeMode ? 'minus' : 'plus';
+                const sign = state.isNegativeMode ? '-' : '+';
+                html += `<td>
+                    <div class="score-cell">
+                        <div class="score-val" id="score-${pIdx}-${catIdx}" onclick="enableDirectEdit(${pIdx}, ${catIdx})">${p.scores[catIdx]}</div>
+                        <div class="controls">
+                            <div class="ctrl-btn ${modeClass}" onclick="adjustScore(${pIdx}, ${catIdx}, 1)">${sign}1</div>
+                            <div class="ctrl-btn ${modeClass}" onclick="adjustScore(${pIdx}, ${catIdx}, 5)">${sign}5</div>
+                            <div class="ctrl-btn ${modeClass}" onclick="adjustScore(${pIdx}, ${catIdx}, 10)">${sign}10</div>
+                        </div>
+                    </div>
+                </td>`;
+            });
+            html += `</tr>`;
+        });
+
+        // Total Row
+        html += `<tr class="total-row"><td class="category-name sticky-total">TOTAL</td>`;
+        players.forEach((p, pIdx) => {
+            const total = p.scores.reduce((a, b) => a + b, 0);
+            html += `<td id="total-${pIdx}" style="font-size: 1.4em; border-top: 2px solid #333;">${total}</td>`;
+        });
+        html += `</tr></tbody></table>`;
+
+        document.getElementById('scoresheet-container').innerHTML = html;
+    }
+
+    function adjustScore(playerIdx, catIdx, amount) {
+        const multiplier = state.isNegativeMode ? -1 : 1;
+        state.currentGame.players[playerIdx].scores[catIdx] += (amount * multiplier);
+        updateScoreUI(playerIdx, catIdx);
+        saveToLocalStorage();
+    }
+
+    function setScoreMode(isNegative) {
+        state.isNegativeMode = isNegative;
+        document.getElementById('toggle-plus').classList.toggle('active', !isNegative);
+        document.getElementById('toggle-minus').classList.toggle('active', isNegative);
+        renderScoreSheet();
+    }
+
+    function updateScoreUI(playerIdx, catIdx) {
+        const scoreEl = document.getElementById(`score-${playerIdx}-${catIdx}`);
+        if (scoreEl) {
+            scoreEl.innerText = state.currentGame.players[playerIdx].scores[catIdx];
+        }
+        
+        const total = state.currentGame.players[playerIdx].scores.reduce((a, b) => a + b, 0);
+        const totalEl = document.getElementById(`total-${playerIdx}`);
+        if (totalEl) {
+            totalEl.innerText = total;
+        }
+    }
+
+    function enableDirectEdit(playerIdx, catIdx) {
+        const scoreEl = document.getElementById(`score-${playerIdx}-${catIdx}`);
+        const currentVal = state.currentGame.players[playerIdx].scores[catIdx];
+        
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.className = 'score-input';
+        input.value = currentVal;
+        
+        input.onblur = () => {
+            const newVal = parseInt(input.value) || 0;
+            state.currentGame.players[playerIdx].scores[catIdx] = newVal;
+            renderScoreSheet(); // Re-render to restore the div and update everything
+            saveToLocalStorage();
+        };
+
+        input.onkeydown = (e) => {
+            if (e.key === 'Enter') {
+                input.blur();
+            }
+        };
+
+        scoreEl.innerHTML = '';
+        scoreEl.appendChild(input);
+        input.focus();
+        input.select();
+    }
+
+    function updatePlayerName(playerIdx, newName) {
+        state.currentGame.players[playerIdx].name = newName;
+        saveToLocalStorage();
+    }
+
+    function confirmNewGame() {
+        if (confirm("Are you sure you want to start a new game? Current scores will be cleared.")) {
+            state.currentGame = null;
+            localStorage.removeItem('boardGameScore_currentGame');
+            showScreen('game-selection');
+        }
+    }
+
+    init();
+</script>
+
+</body>
+</html>
