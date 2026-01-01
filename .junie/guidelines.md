@@ -45,10 +45,10 @@ The `state` object in `index.html` manages the following:
 ## Development Preferences
 - **Mobile First**: Use responsive design (meta viewport, flexible units).
 - **Vanilla JS**: No heavy frameworks to ensure it runs easily as a local file.
-- **Single File**: Use a single `index.html` for maximum portability as a local file.
+- **Single File**: Use a single `BoardGameScore.html` for maximum portability as a local file.
 
 ## How to Add a New Game
-1. Open `index.html`.
+1. Open `BoardGameScore.html`.
 2. Find the `GAMES` constant in the script tag.
 3. Add a new game object following the existing structure.
 4. Update the UI logic if special scoring is required.

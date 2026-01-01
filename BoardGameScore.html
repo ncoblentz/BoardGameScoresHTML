@@ -162,10 +162,10 @@
         }
 
         th, td {
-            padding: 10px;
+            padding: 6px 2px;
             border: 1px solid #eee;
             text-align: center;
-            min-width: 100px;
+            min-width: 45px;
         }
 
         .category-name {
@@ -175,7 +175,11 @@
             left: 0;
             background: #fff;
             z-index: 10;
-            min-width: 120px;
+            min-width: 45px;
+            max-width: 45px;
+            font-size: 0.7em;
+            line-height: 1.1;
+            word-wrap: break-word;
             box-shadow: 2px 0 5px rgba(0,0,0,0.05);
         }
 
@@ -184,22 +188,22 @@
             flex-direction: row;
             align-items: center;
             justify-content: center;
-            gap: 8px;
+            gap: 5px;
         }
 
         .score-val {
             font-size: 1.5em;
             font-weight: bold;
-            padding: 10px 5px;
+            padding: 5px;
             background: #f0f0f0;
             border-radius: 4px;
-            min-width: 45px;
+            min-width: 40px;
             text-align: center;
             cursor: pointer;
         }
 
         .score-input {
-            width: 45px;
+            width: 40px;
             font-size: 1.2em;
             font-weight: bold;
             text-align: center;
@@ -209,9 +213,9 @@
         }
 
         .controls {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1px;
         }
 
         .mode-toggle {
@@ -238,25 +242,31 @@
         }
 
         .ctrl-btn {
-            padding: 4px 8px;
-            font-size: 13px;
-            border: 1px solid #ddd;
-            background: #f9f9f9;
-            border-radius: 4px;
+            padding: 1px 2px;
+            font-size: 8px;
+            border: 1px solid #eee;
+            background: transparent;
+            border-radius: 3px;
             cursor: pointer;
             user-select: none;
-            font-weight: bold;
+            font-weight: normal;
             line-height: 1;
+            color: #999;
         }
 
         .ctrl-btn.plus {
             color: #27ae60;
-            background: #eafaf1;
+            opacity: 0.6;
         }
 
         .ctrl-btn.minus {
             color: #c0392b;
-            background: #fdecea;
+            opacity: 0.6;
+        }
+
+        .ctrl-btn.reset {
+            color: #7f8c8d;
+            opacity: 0.6;
         }
 
         .ctrl-btn:active {
@@ -270,7 +280,7 @@
 
         .player-header {
             writing-mode: horizontal-tb;
-            max-width: 100px;
+            max-width: 60px;
             overflow: hidden;
             text-overflow: ellipsis;
         }
@@ -305,21 +315,43 @@
             border-radius: 4px;
         }
 
-        @media (max-width: 400px) {
+        @media (max-width: 480px) {
+            .container {
+                padding: 5px;
+            }
+            .card {
+                padding: 10px;
+            }
             .ctrl-btn {
-                font-size: 11px;
-                padding: 3px 6px;
+                font-size: 8px;
+                padding: 1px 2px;
+                min-width: 15px;
             }
             .score-val {
-                font-size: 1.3em;
-                min-width: 35px;
+                font-size: 1.1em;
+                min-width: 25px;
+                padding: 5px 2px;
             }
             .score-cell {
-                gap: 4px;
+                gap: 2px;
+            }
+            .controls {
+                gap: 1px;
             }
             .toggle-btn {
-                padding: 6px 12px;
-                font-size: 14px;
+                padding: 5px 10px;
+                font-size: 12px;
+            }
+            th, td {
+                min-width: 40px;
+            }
+            .category-name {
+                min-width: 40px;
+                max-width: 40px;
+                font-size: 0.65em;
+            }
+            .player-header {
+                font-size: 0.8em;
             }
         }
     </style>
@@ -491,8 +523,6 @@
         // Reset player inputs for new setup
         const container = document.getElementById('player-inputs');
         container.innerHTML = '';
-        addPlayerInput();
-        addPlayerInput();
         
         state.tempGameId = gameId;
         showScreen('player-setup');
@@ -600,6 +630,7 @@
                     <div class="score-cell">
                         <div class="score-val" id="score-${pIdx}-${catIdx}" onclick="enableDirectEdit(${pIdx}, ${catIdx})">${p.scores[catIdx]}</div>
                         <div class="controls">
+                            <div class="ctrl-btn reset" onclick="resetScore(${pIdx}, ${catIdx})">0</div>
                             <div class="ctrl-btn ${modeClass}" onclick="adjustScore(${pIdx}, ${catIdx}, 1)">${sign}1</div>
                             <div class="ctrl-btn ${modeClass}" onclick="adjustScore(${pIdx}, ${catIdx}, 5)">${sign}5</div>
                             <div class="ctrl-btn ${modeClass}" onclick="adjustScore(${pIdx}, ${catIdx}, 10)">${sign}10</div>
@@ -626,6 +657,14 @@
         state.currentGame.players[playerIdx].scores[catIdx] += (amount * multiplier);
         updateScoreUI(playerIdx, catIdx);
         saveToLocalStorage();
+    }
+
+    function resetScore(playerIdx, catIdx) {
+        if (confirm("Reset this score to zero?")) {
+            state.currentGame.players[playerIdx].scores[catIdx] = 0;
+            updateScoreUI(playerIdx, catIdx);
+            saveToLocalStorage();
+        }
     }
 
     function setScoreMode(isNegative) {
